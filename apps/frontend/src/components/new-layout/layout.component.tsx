@@ -2,6 +2,7 @@
 
 import React, { ReactNode, useCallback, useEffect } from 'react';
 import { Logo } from '@gitroom/frontend/components/new-layout/logo';
+import { BackToBackofficeComponent } from '@gitroom/frontend/components/layout/back-to-backoffice.component';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 const ModeComponent = dynamic(
   () => import('@gitroom/frontend/components/layout/mode.component'),
@@ -129,6 +130,8 @@ export const LayoutComponent = ({ children }: { children: ReactNode }) => {
                           <Title />
                         </div>
                         <div className="flex gap-[20px] text-textItemBlur">
+                          <BackToBackofficeComponent />
+                          <div className="w-[1px] h-[20px] bg-blockSeparator" />
                           <StreakComponent />
                           <div className="w-[1px] h-[20px] bg-blockSeparator" />
                           <OrganizationSelector />
