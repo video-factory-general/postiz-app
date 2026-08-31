@@ -50,7 +50,7 @@ export class CopilotController {
       endpoint: '/copilot/chat',
       runtime: new CopilotRuntime(),
       serviceAdapter: new OpenAIAdapter({
-        model: 'gpt-4.1',
+        model: 'z-ai/glm-5.3-flash',
       }),
     });
 
@@ -96,7 +96,7 @@ export class CopilotController {
       runtime,
       // properties: req.body.variables.properties,
       serviceAdapter: new OpenAIAdapter({
-        model: 'gpt-4.1',
+        model: 'z-ai/glm-5.3-flash',
       }),
     });
 

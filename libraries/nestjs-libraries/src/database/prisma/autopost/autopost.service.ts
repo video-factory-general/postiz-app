@@ -37,8 +37,9 @@ interface WorkflowChannelsState {
 
 const model = new ChatOpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'sk-proj-',
-  model: 'gpt-4.1',
+  model: 'z-ai/glm-5.3-flash',
   temperature: 0.7,
+  configuration: { baseURL: process.env.OPENAI_BASE_URL },
 });
 
 const dalle = new DallEAPIWrapper({
