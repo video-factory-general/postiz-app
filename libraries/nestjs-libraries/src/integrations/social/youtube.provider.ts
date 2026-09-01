@@ -678,6 +678,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       uploadedBytes: number;
       thumbnail: string;
       videoId?: string;
+      thumbnailAttempts?: number;
     },
     integration: Integration
   ): Promise<PendingCheckResponse> {
@@ -804,13 +805,19 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       const processingStatus =
         data.items?.[0]?.processingDetails?.processingStatus;
 
+      const thumbnailAttempts = (pendingData.thumbnailAttempts ?? 0) + 1;
+
       console.log(
-        `[youtube-thumb] videoId=${videoId} processingStatus=${processingStatus}`
+        `[youtube-thumb] videoId=${videoId} processingStatus=${processingStatus} attempt=${thumbnailAttempts}`
       );
 
-      if (processingStatus === 'processing') {
-        console.log(`[youtube-thumb] deferring, video still processing`);
-        return { status: 'ready', pendingData: { ...pendingData, videoId } };
+      // require positive confirmation: an empty items[] right after upload
+      // reads as undefined, which must defer rather than fall through
+      if (processingStatus !== 'succeeded' && thumbnailAttempts < 5) {
+        return {
+          status: 'ready',
+          pendingData: { ...pendingData, videoId, thumbnailAttempts },
+        };
       }
 
       const setResult: any = await this.runInConcurrent(async () =>
