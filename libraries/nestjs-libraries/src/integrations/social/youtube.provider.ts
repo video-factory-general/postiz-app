@@ -795,6 +795,19 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       client.setCredentials({ access_token: accessToken });
       const youtubeClient = youtube(client);
 
+      // thumbnails.set succeeds silently without applying anything while
+      // YouTube is still processing the video - wait for it to finish first.
+      const { data } = await youtubeClient.videos.list({
+        id: [videoId],
+        part: ['processingDetails'],
+      });
+      const processingStatus =
+        data.items?.[0]?.processingDetails?.processingStatus;
+
+      if (processingStatus === 'processing') {
+        return { status: 'ready', pendingData: { ...pendingData, videoId } };
+      }
+
       await this.runInConcurrent(async () =>
         youtubeClient.thumbnails.set({
           videoId,
