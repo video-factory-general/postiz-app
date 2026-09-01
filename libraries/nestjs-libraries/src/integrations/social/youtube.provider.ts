@@ -804,11 +804,16 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       const processingStatus =
         data.items?.[0]?.processingDetails?.processingStatus;
 
+      console.log(
+        `[youtube-thumb] videoId=${videoId} processingStatus=${processingStatus}`
+      );
+
       if (processingStatus === 'processing') {
+        console.log(`[youtube-thumb] deferring, video still processing`);
         return { status: 'ready', pendingData: { ...pendingData, videoId } };
       }
 
-      await this.runInConcurrent(async () =>
+      const setResult: any = await this.runInConcurrent(async () =>
         youtubeClient.thumbnails.set({
           videoId,
           media: {
@@ -821,6 +826,10 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
             ).data,
           },
         })
+      );
+
+      console.log(
+        `[youtube-thumb] set done status=${setResult?.status} etag=${setResult?.data?.etag}`
       );
     }
 
