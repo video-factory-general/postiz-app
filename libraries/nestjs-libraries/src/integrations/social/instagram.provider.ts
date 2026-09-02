@@ -667,13 +667,18 @@ export class InstagramProvider
           (firstPost?.media?.length || 0) > 1 && !isStory
             ? `&is_carousel_item=true`
             : ``;
+        // cover_url takes precedence over thumb_offset at Meta's end
+        const coverUrl = firstPost.settings.thumbnail?.path
+          ? `&cover_url=${encodeURIComponent(firstPost.settings.thumbnail.path)}`
+          : ``;
+
         const mediaType = hasExtension(m.path, 'mp4')
           ? firstPost?.media?.length === 1
             ? isStory
               ? `video_url=${m.path}&media_type=STORIES`
               : `video_url=${m.path}&media_type=REELS&thumb_offset=${
                   m?.thumbnailTimestamp || 0
-                }`
+                }${coverUrl}`
             : isStory
             ? `video_url=${m.path}&media_type=STORIES`
             : `video_url=${m.path}&media_type=VIDEO&thumb_offset=${

@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { MediaDto } from '@gitroom/nestjs-libraries/dtos/media/media.dto';
 import {
   IsArray,
   IsDefined,
@@ -70,4 +71,9 @@ export class InstagramDto {
   @ValidateNested()
   @IsOptional()
   audio?: InstagramAudio;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => MediaDto)
+  thumbnail?: MediaDto;
 }

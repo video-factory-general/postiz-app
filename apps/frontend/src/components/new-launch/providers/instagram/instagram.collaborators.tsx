@@ -14,6 +14,7 @@ import { InstagramAudioSelector } from '@gitroom/frontend/components/new-launch/
 import { useIntegration } from '@gitroom/frontend/components/launches/helpers/use.integration';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
 import { InstagramPreview } from '@gitroom/frontend/components/new-launch/providers/instagram/instagram.preview';
+import { MediaComponent } from '@gitroom/frontend/components/media/media.component';
 const postType = [
   {
     value: 'post',
@@ -79,6 +80,19 @@ const InstagramCollaborators: FC<{
             )}
             disabled={!supportsAudio}
             {...register('audio')}
+          />
+        </div>
+      )}
+
+      {postCurrentType === 'post' && (
+        <div className="mt-[18px]">
+          <MediaComponent
+            type="image"
+            width={1080}
+            height={1920}
+            label="Cover"
+            description="Reel cover picture (optional)"
+            {...register('thumbnail')}
           />
         </div>
       )}
