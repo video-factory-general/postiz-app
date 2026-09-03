@@ -905,6 +905,51 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
     }
   }
 
+  /**
+   * Reads the channel's own uploads playlist rather than search.list: same result for
+   * "what did we publish", at 1 quota unit instead of 100.
+   */
+  @Tool({ description: 'Recent videos on the channel', dataSchema: [] })
+  async channelVideos(accessToken: string) {
+    const { client, youtube } = clientAndYoutube();
+    client.setCredentials({ access_token: accessToken });
+    const youtubeClient = youtube(client);
+
+    const channel = await youtubeClient.channels.list({
+      part: ['contentDetails'],
+      mine: true,
+    });
+    const uploads =
+      channel.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploads) return [];
+
+    const { data } = await youtubeClient.playlistItems.list({
+      part: ['snippet', 'contentDetails'],
+      playlistId: uploads,
+      maxResults: 25,
+    });
+
+    return (data.items || []).map((item) => ({
+      videoId: item.contentDetails?.videoId || '',
+      title: item.snippet?.title || '',
+      publishedAt:
+        item.contentDetails?.videoPublishedAt || item.snippet?.publishedAt || '',
+      thumbnail: item.snippet?.thumbnails?.medium?.url || null,
+    }));
+  }
+
+  @Tool({
+    description: 'Delete a video from the channel',
+    dataSchema: [{ key: 'videoId', type: 'string', description: 'Video id' }],
+  })
+  async deleteVideo(accessToken: string, data: { videoId: string }) {
+    if (!data?.videoId) throw new Error('videoId is required');
+    const { client, youtube } = clientAndYoutube();
+    client.setCredentials({ access_token: accessToken });
+    await youtube(client).videos.delete({ id: data.videoId });
+    return { deleted: data.videoId };
+  }
+
   @Tool({ description: 'List the channel playlists', dataSchema: [] })
   async playlists(accessToken: string) {
     const { client, youtube } = clientAndYoutube();
