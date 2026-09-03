@@ -24,6 +24,7 @@ import { createReadStream, statSync } from 'fs';
 import { getSsrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 import { setHeartbeatDetails } from '@gitroom/nestjs-libraries/temporal/temporal.heartbeat';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
+import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 
 const clientAndYoutube = () => {
   const client = new google.auth.OAuth2({
@@ -613,6 +614,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
           path,
           uploadedBytes: 0,
           thumbnail: settings?.thumbnail?.path || '',
+          playlistId: settings?.playlistId || '',
         },
       },
     ];
@@ -626,6 +628,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       path: string;
       uploadedBytes: number;
       thumbnail: string;
+      playlistId?: string;
       videoId?: string;
     },
     integration: Integration
@@ -677,6 +680,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       path: string;
       uploadedBytes: number;
       thumbnail: string;
+      playlistId?: string;
       videoId?: string;
     },
     integration: Integration
@@ -811,6 +815,27 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       );
     }
 
+    if (pendingData.playlistId) {
+      const { client, youtube } = clientAndYoutube();
+      client.setCredentials({ access_token: accessToken });
+      try {
+        await this.runInConcurrent(async () =>
+          youtube(client).playlistItems.insert({
+            part: ['snippet'],
+            requestBody: {
+              snippet: {
+                playlistId: pendingData.playlistId,
+                resourceId: { kind: 'youtube#video', videoId },
+              },
+            },
+          })
+        );
+      } catch (err) {
+        // The video is already public; a playlist it did not join is not worth failing the post over.
+        console.error('youtube playlistItems.insert failed', err);
+      }
+    }
+
     return {
       status: 'completed',
       postId: videoId,
@@ -878,6 +903,38 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
 
       pendingData = finalize.pendingData;
     }
+  }
+
+  @Tool({ description: 'List the channel playlists', dataSchema: [] })
+  async playlists(accessToken: string) {
+    const { client, youtube } = clientAndYoutube();
+    client.setCredentials({ access_token: accessToken });
+    const { data } = await youtube(client).playlists.list({
+      part: ['snippet'],
+      mine: true,
+      maxResults: 50,
+    });
+    return (data.items || []).map((item) => ({
+      value: item.id,
+      label: item.snippet?.title || item.id,
+    }));
+  }
+
+  @Tool({
+    description: 'Create a playlist',
+    dataSchema: [{ key: 'title', type: 'string', description: 'Playlist title' }],
+  })
+  async createPlaylist(accessToken: string, data: { title: string }) {
+    const { client, youtube } = clientAndYoutube();
+    client.setCredentials({ access_token: accessToken });
+    const created = await youtube(client).playlists.insert({
+      part: ['snippet', 'status'],
+      requestBody: {
+        snippet: { title: data.title },
+        status: { privacyStatus: 'public' },
+      },
+    });
+    return { value: created.data.id, label: created.data.snippet?.title || data.title };
   }
 
   async analytics(

@@ -78,6 +78,11 @@ export class YoutubeSettingsDto {
   @IsOptional()
   selfDeclaredMadeForKids: 'no' | 'yes';
 
+  // Empty string means "channel only" — the picker sends it when nothing is chosen.
+  @IsString()
+  @IsOptional()
+  playlistId?: string;
+
   @IsOptional()
   @ValidateNested()
   @Type(() => MediaDto)
