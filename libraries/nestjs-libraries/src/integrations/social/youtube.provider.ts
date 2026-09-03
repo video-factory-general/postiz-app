@@ -909,25 +909,45 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
    * Reads the channel's own uploads playlist rather than search.list: same result for
    * "what did we publish", at 1 quota unit instead of 100.
    */
+  /**
+   * The trigger endpoint only refreshes a token when a provider throws RefreshToken; a bare
+   * Google 401 reaches it as a generic 500, so an hour after connecting every tool stops working.
+   */
+  private asRefreshToken(error: unknown): never {
+    const status = (error as { code?: number; status?: number; response?: { status?: number } })
+      ?.response?.status ??
+      (error as { code?: number })?.code ??
+      (error as { status?: number })?.status;
+    if (status === 401) {
+      throw new RefreshToken(this.identifier, JSON.stringify({ status }), '{}');
+    }
+    throw error;
+  }
+
   @Tool({ description: 'Recent videos on the channel', dataSchema: [] })
   async channelVideos(accessToken: string) {
     const { client, youtube } = clientAndYoutube();
     client.setCredentials({ access_token: accessToken });
     const youtubeClient = youtube(client);
 
-    const channel = await youtubeClient.channels.list({
-      part: ['contentDetails'],
-      mine: true,
-    });
-    const uploads =
-      channel.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
-    if (!uploads) return [];
+    const data = await (async () => {
+      const channel = await youtubeClient.channels.list({
+        part: ['contentDetails'],
+        mine: true,
+      });
+      const uploads =
+        channel.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+      if (!uploads) return null;
 
-    const { data } = await youtubeClient.playlistItems.list({
-      part: ['snippet', 'contentDetails'],
-      playlistId: uploads,
-      maxResults: 25,
-    });
+      const items = await youtubeClient.playlistItems.list({
+        part: ['snippet', 'contentDetails'],
+        playlistId: uploads,
+        maxResults: 25,
+      });
+      return items.data;
+    })().catch((error) => this.asRefreshToken(error));
+
+    if (!data) return [];
 
     return (data.items || []).map((item) => ({
       videoId: item.contentDetails?.videoId || '',
@@ -946,7 +966,9 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
     if (!data?.videoId) throw new Error('videoId is required');
     const { client, youtube } = clientAndYoutube();
     client.setCredentials({ access_token: accessToken });
-    await youtube(client).videos.delete({ id: data.videoId });
+    await youtube(client)
+      .videos.delete({ id: data.videoId })
+      .catch((error) => this.asRefreshToken(error));
     return { deleted: data.videoId };
   }
 
