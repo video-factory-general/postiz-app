@@ -75,7 +75,10 @@ export class RefreshIntegrationService {
   ): Promise<AuthTokenDetails | false> {
     const refresh: false | AuthTokenDetails = await socialProvider
       .refreshToken(integration.refreshToken)
-      .catch((err) => false);
+      .catch((err) => {
+        console.error(`refreshToken failed for ${integration.providerIdentifier} ${integration.id}:`, err);
+        return false as const;
+      });
 
     if (!refresh || !refresh.accessToken) {
       await this._integrationService.refreshNeeded(

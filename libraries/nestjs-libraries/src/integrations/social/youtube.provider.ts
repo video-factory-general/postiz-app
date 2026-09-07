@@ -60,6 +60,8 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
   identifier = 'youtube';
   name = 'YouTube';
   isBetweenSteps = true;
+  // Without this, the token is only ever refreshed reactively after a tool call already 401'd.
+  refreshCron = true;
   dto = YoutubeSettingsDto;
   scopes = [
     'https://www.googleapis.com/auth/userinfo.profile',
@@ -976,11 +978,9 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
   async playlists(accessToken: string) {
     const { client, youtube } = clientAndYoutube();
     client.setCredentials({ access_token: accessToken });
-    const { data } = await youtube(client).playlists.list({
-      part: ['snippet'],
-      mine: true,
-      maxResults: 50,
-    });
+    const { data } = await youtube(client)
+      .playlists.list({ part: ['snippet'], mine: true, maxResults: 50 })
+      .catch((error) => this.asRefreshToken(error));
     return (data.items || []).map((item) => ({
       value: item.id,
       label: item.snippet?.title || item.id,
@@ -994,13 +994,15 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
   async createPlaylist(accessToken: string, data: { title: string }) {
     const { client, youtube } = clientAndYoutube();
     client.setCredentials({ access_token: accessToken });
-    const created = await youtube(client).playlists.insert({
-      part: ['snippet', 'status'],
-      requestBody: {
-        snippet: { title: data.title },
-        status: { privacyStatus: 'public' },
-      },
-    });
+    const created = await youtube(client)
+      .playlists.insert({
+        part: ['snippet', 'status'],
+        requestBody: {
+          snippet: { title: data.title },
+          status: { privacyStatus: 'public' },
+        },
+      })
+      .catch((error) => this.asRefreshToken(error));
     return { value: created.data.id, label: created.data.snippet?.title || data.title };
   }
 
