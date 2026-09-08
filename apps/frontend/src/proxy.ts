@@ -48,6 +48,8 @@ export async function proxy(request: NextRequest) {
     nextUrl.pathname.startsWith('/p/') ||
     nextUrl.pathname.startsWith('/provider/') ||
     nextUrl.pathname.startsWith('/connect/') ||
+    nextUrl.pathname.startsWith('/about') ||
+    nextUrl.pathname.startsWith('/privacy') ||
     nextUrl.pathname.startsWith('/icons/')
   ) {
     return topResponse;
