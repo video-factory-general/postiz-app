@@ -50,8 +50,15 @@ export async function proxy(request: NextRequest) {
     nextUrl.pathname.startsWith('/connect/') ||
     nextUrl.pathname.startsWith('/about') ||
     nextUrl.pathname.startsWith('/privacy') ||
+    nextUrl.pathname.startsWith('/terms') ||
     nextUrl.pathname.startsWith('/icons/')
   ) {
+    return topResponse;
+  }
+
+  // Signed out, "/" is the public landing page; signed in it still falls through
+  // to the redirect further down that sends the team straight into the app.
+  if (nextUrl.pathname === '/' && !authCookie) {
     return topResponse;
   }
 
