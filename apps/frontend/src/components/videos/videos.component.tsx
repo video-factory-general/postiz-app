@@ -10,7 +10,7 @@ interface Channel {
   id: string;
   name: string;
   picture: string;
-  providerIdentifier: string;
+  identifier: string;
   disabled: boolean;
   customer?: { id: string; name: string } | null;
 }
@@ -49,7 +49,7 @@ export const VideosComponent: FC = () => {
     (async () => {
       const { integrations } = await (await fetch('/integrations/list')).json();
       const youtube = (integrations as Channel[]).filter(
-        (channel) => channel.providerIdentifier === 'youtube' && !channel.disabled
+        (channel) => channel.identifier === 'youtube' && !channel.disabled
       );
       setChannels(youtube);
       setSelected(youtube[0] || null);
