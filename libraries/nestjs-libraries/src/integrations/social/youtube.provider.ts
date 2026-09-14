@@ -973,6 +973,46 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
     return { deleted: data.videoId };
   }
 
+  @Tool({
+    description: 'Update a video title and/or description',
+    dataSchema: [
+      { key: 'videoId', type: 'string', description: 'Video id' },
+      { key: 'title', type: 'string', description: 'New title' },
+      { key: 'description', type: 'string', description: 'New description' },
+    ],
+  })
+  async updateVideo(
+    accessToken: string,
+    data: { videoId: string; title?: string; description?: string }
+  ) {
+    if (!data?.videoId) throw new Error('videoId is required');
+    const { client, youtube } = clientAndYoutube();
+    client.setCredentials({ access_token: accessToken });
+    const youtubeClient = youtube(client);
+
+    const existing = await youtubeClient.videos
+      .list({ part: ['snippet'], id: [data.videoId] })
+      .catch((error) => this.asRefreshToken(error));
+    const snippet = existing.data.items?.[0]?.snippet;
+    if (!snippet) throw new Error('Video not found');
+
+    await youtubeClient.videos
+      .update({
+        part: ['snippet'],
+        requestBody: {
+          id: data.videoId,
+          snippet: {
+            ...snippet,
+            title: data.title ?? snippet.title,
+            description: data.description ?? snippet.description,
+          },
+        },
+      })
+      .catch((error) => this.asRefreshToken(error));
+
+    return { updated: data.videoId };
+  }
+
   @Tool({ description: 'List the channel playlists', dataSchema: [] })
   async playlists(accessToken: string) {
     const { client, youtube } = clientAndYoutube();

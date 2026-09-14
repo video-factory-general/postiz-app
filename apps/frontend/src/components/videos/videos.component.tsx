@@ -77,6 +77,21 @@ export const VideosComponent: FC = () => {
     return [...byCustomer.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [channels]);
 
+  const update = async (video: Video) => {
+    if (!selected) return;
+    const title = window.prompt('New title', video.title);
+    if (title === null || title === video.title) return;
+    try {
+      await callTool(selected.id, 'updateVideo', { videoId: video.videoId, title });
+      setVideos((current) =>
+        current.map((v) => (v.videoId === video.videoId ? { ...v, title } : v))
+      );
+      toaster.show('Video updated', 'success');
+    } catch {
+      toaster.show('Could not update the video', 'warning');
+    }
+  };
+
   const remove = async (video: Video) => {
     if (!selected) return;
     if (
@@ -172,8 +187,11 @@ export const VideosComponent: FC = () => {
                 rel="noreferrer"
                 className="shrink-0 text-[12px] underline"
               >
-                Edit
+                Edit on YouTube
               </a>
+              <Button type="button" onClick={() => update(video)}>
+                Update title
+              </Button>
               <Button type="button" onClick={() => remove(video)} className="!bg-red-600">
                 Delete
               </Button>
