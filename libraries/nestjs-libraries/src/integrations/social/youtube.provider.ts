@@ -1129,6 +1129,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
 
       return acc;
     } catch (err) {
+      console.error(`youtube analytics failed for ${id}:`, err);
       return [];
     }
   }
