@@ -62,7 +62,9 @@ export class NoAuthIntegrationsController {
       ? 'none'
       : await ioRedis.get(`login:${body.state}`);
     if (!getCodeVerifier) {
-      throw new Error('Invalid state');
+      throw new Error(
+        'This connection link was already used or has expired. Open the connect link again.'
+      );
     }
 
     const organization = await ioRedis.get(`organization:${body.state}`);
@@ -117,6 +119,9 @@ export class NoAuthIntegrationsController {
         );
 
         if (typeof auth === 'string') {
+          console.error(
+            `[connect] ${integration} rejected state=${body.state?.slice(0, 8)}: ${auth}`
+          );
           return res({
             error: auth,
             accessToken: '',
@@ -152,6 +157,10 @@ export class NoAuthIntegrationsController {
 
         return res(auth);
       } catch (err) {
+        console.error(
+          `[connect] ${integration} authenticate failed state=${body.state?.slice(0, 8)}:`,
+          err
+        );
         if (err instanceof NotEnoughScopes) {
           return res({
             error: err.message,
