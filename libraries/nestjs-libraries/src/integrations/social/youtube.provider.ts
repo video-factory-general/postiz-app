@@ -357,7 +357,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
       }));
     } catch (error) {
       console.error('Failed to fetch YouTube channels:', error);
-      return [];
+      throw error;
     }
   }
 

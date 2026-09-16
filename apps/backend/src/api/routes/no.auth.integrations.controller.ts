@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpException,
+  HttpStatus,
   Param,
   Post,
   UseFilters,
@@ -62,8 +63,11 @@ export class NoAuthIntegrationsController {
       ? 'none'
       : await ioRedis.get(`login:${body.state}`);
     if (!getCodeVerifier) {
-      throw new Error(
-        'This connection link was already used or has expired. Open the connect link again.'
+      throw new HttpException(
+        {
+          msg: 'This connection link was already used. Check your channels — it may already be connected.',
+        },
+        HttpStatus.NOT_ACCEPTABLE
       );
     }
 
